@@ -102,7 +102,7 @@ class PacmanDQN(PacmanUtils):
         self.epsilon = EPSILON_START  # epsilon init value
 
         # Initialize replay memory and Q networks
-        self.input_size = 11  # Temporary
+        self.input_size = 196
         self.q = DQN(self.input_size)
         self.qt = DQN(self.input_size)
         self.qt.load_state_dict(self.q.state_dict())
@@ -128,7 +128,7 @@ class PacmanDQN(PacmanUtils):
     
     def update_epsilon(self):
         # Exploration 시 사용할 epsilon 값을 업데이트
-        self.epsilon = max(0.01, 0.08 - 0.01*(self.episode_number / 200)) 
+        self.epsilon = max(0.01, 0.08 - 0.01 * (self.episode_number / 200)) 
                  
     def step(self, next_state, reward, done):
         # next_state = self.state에 self.action 을 적용하여 나온 state
@@ -210,14 +210,41 @@ class PacmanDQN(PacmanUtils):
             self.episode_rewards= []
     
     def get_pacman_grid(self, state):
-        pass
+        grid = [0] * 49
+        x, y = state.getPacmanPosition()
+        y, x = 6 - y, x
+        grid[7 * y + x] = 1
+        return grid
+    
+    def get_ghost_grid(self, state):
+        grid = [0] * 49
+        x, y = state.getGhostPositions()[0]
+        y, x = int(6 - y), int(x)
+        grid[7 * y + x] = 1
+        return grid
+    
+    def get_capsule_grid(self, state):
+        grid = [0] * 49
+        if not state.getCapsules():
+            return grid
+        x, y = state.getCapsules()[0]
+        y, x = 6 - y, x
+        grid[7 * y + x] = 1
+        return grid
 
-    # def preprocess(self, state):
-    #     # pacman.py의 Gamestate 클래스를 참조하여 state로부터 자유롭게 state를 preprocessing 해보세요.
-    #     # Change proprocessing with grid states of pacman, ghost, food, capsule.
-    #     res = []
+    def get_food_grid(self, state):
+        grid = [0] * 49
+        food_pos = []
+        
+        for i in range(7):
+            for j in range(7):
+                if state.getFood()[i][j]:
+                    food_pos.append((i, j))
 
-    #     return np.array(res)
+        for y, x in food_pos:
+            grid[7 * y + x] = 1
+        
+        return grid
 
     def preprocess(self, state):
         # pacman.py의 Gamestate 클래스를 참조하여 state로부터 자유롭게 state를 preprocessing 해보세요.
