@@ -208,43 +208,6 @@ class PacmanDQN(PacmanUtils):
                                                                     self.win_counter, win_rate, avg_reward, self.epsilon))
             self.win_counter = 0
             self.episode_rewards= []
-    
-    def get_pacman_grid(self, state):
-        grid = [0] * 49
-        x, y = state.getPacmanPosition()
-        y, x = 6 - y, x
-        grid[7 * y + x] = 1
-        return grid
-    
-    def get_ghost_grid(self, state):
-        grid = [0] * 49
-        x, y = state.getGhostPositions()[0]
-        y, x = int(6 - y), int(x)
-        grid[7 * y + x] = 1
-        return grid
-    
-    def get_capsule_grid(self, state):
-        grid = [0] * 49
-        if not state.getCapsules():
-            return grid
-        x, y = state.getCapsules()[0]
-        y, x = 6 - y, x
-        grid[7 * y + x] = 1
-        return grid
-
-    def get_food_grid(self, state):
-        grid = [0] * 49
-        food_pos = []
-        
-        for i in range(7):
-            for j in range(7):
-                if state.getFood()[i][j]:
-                    food_pos.append((i, j))
-
-        for y, x in food_pos:
-            grid[7 * y + x] = 1
-        
-        return grid
 
     def preprocess(self, state):
         # pacman.py의 Gamestate 클래스를 참조하여 state로부터 자유롭게 state를 preprocessing 해보세요.
