@@ -3,8 +3,5 @@ pacmanDQNAgents_reference.py
 pacmanDQNAgents_template.py
 torch_dqn_baseline.py
 *.pt
-deprecated/
-__pycache__/
-__pycache__ copy/
-.dist/
-.vscode/
+*/
+layouts/

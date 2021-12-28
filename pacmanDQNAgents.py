@@ -25,6 +25,7 @@ TARGET_UPDATE_ITER = 20   # update target network
 EPSILON_START = 0.08
 PATH = './q.pt'
 BATCH_SIZE = 32
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class ReplayMemory:
@@ -58,9 +59,9 @@ class ReplayMemory:
         next_states = np.array(next_states)
         done_masks = np.array(done_masks)
 
-        return torch.tensor(states, dtype=torch.float), torch.tensor(actions), \
-                torch.tensor(rewards), torch.tensor(next_states, dtype=torch.float), \
-                torch.tensor(done_masks)
+        return torch.tensor(states, device=device, dtype=torch.float), torch.tensor(actions, device=device), \
+                torch.tensor(rewards, device=device), torch.tensor(next_states, device=device, dtype=torch.float), \
+                torch.tensor(done_masks, device=device)
     
     def size(self):
         return len(self.memory)
@@ -102,10 +103,10 @@ class PacmanDQN(PacmanUtils):
         self.epsilon = EPSILON_START  # epsilon init value
 
         # Initialize replay memory and Q networks
-        self.input_size = 196
-        self.q = DQN(self.input_size)
-        self.qt = DQN(self.input_size)
-        self.qt.load_state_dict(self.q.state_dict())
+        self.input_size = 11
+        self.q = DQN(self.input_size).to(device)
+        self.q_target = DQN(self.input_size).to(device)
+        self.q_target.load_state_dict(self.q.state_dict())
         self.replay_memory = ReplayMemory()
         self.optimizer = optim.Adam(self.q.parameters(), lr=LEARNING_RATE)
     
@@ -116,7 +117,7 @@ class PacmanDQN(PacmanUtils):
         state = torch.from_numpy(state).float()
 
         # e-Greedy
-        q_out = self.q.forward(state)
+        q_out = self.q(state)
         act_prob = random.random()
         if act_prob < self.epsilon:
             act = random.randint(0, 3)
@@ -157,14 +158,14 @@ class PacmanDQN(PacmanUtils):
             self.update_epsilon()
             if(self.steps_taken % TARGET_UPDATE_ITER == 0):
                 # UPDATING target network 
-                self.qt.load_state_dict(self.q.state_dict())
+                self.q_target.load_state_dict(self.q.state_dict())
             
             torch.save(self.q.state_dict(), PATH)
         else:
             # Test mode
-            self.q = DQN(self.input_size)
-            self.q.load_state_dict(torch.load(PATH))
-            self.q.eval()
+            self.q_target = DQN(self.input_size).to(device)
+            self.q_target.load_state_dict(torch.load(PATH))
+            self.q_target.eval()
 		
     def train(self):
         # replay_memory로부터 mini batch를 받아 policy를 업데이트
@@ -173,7 +174,7 @@ class PacmanDQN(PacmanUtils):
             
             q_out = self.q(state)
             q_a = q_out.gather(1, action)
-            max_q_prime = self.qt(next_state).max(1)[0].unsqueeze(1)
+            max_q_prime = self.q_target(next_state).max(1)[0].unsqueeze(1)
             target = reward + DISCOUNT_RATE * max_q_prime * done_mask
             loss = F.smooth_l1_loss(q_a, target)
 
@@ -254,6 +255,7 @@ class DQN(nn.Module):
         self.fc3 = nn.Linear(128, 4)
     
     def forward(self, x):
+        x = x.to(device)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
